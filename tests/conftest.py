@@ -6,6 +6,8 @@ from collections import namedtuple
 def test_db():
     conn = sqlite3.connect('test.db')
     cur = conn.cursor()
+    cur.execute("CREATE TABLE insert_row (id INT, name TEXT, birthday DATE)")
+    conn.commit()
     TestDB = namedtuple('TestDB', ['connection', 'cursor'])
     test_db = TestDB(conn, cur)
     yield test_db

@@ -1,4 +1,5 @@
 import datetime
+from typing import Type
 import pytest
 from sqlite_decorators import __version__
 from sqlite_decorators import create_table, dict_into_row, insert_row
@@ -62,3 +63,12 @@ def test_insert_row(test_db):
     WHERE id=1234"""
     ).fetchone()
     assert row == (1234, "Tim", str(datetime.date.today()))
+
+
+def test_insert_row_type_fail(test_db):
+    @insert_row(test_db.cursor, test_db.connection, "insert_row")
+    def row_template():
+        return [1234, "Tim", datetime.date.today()]
+    with pytest.raises(TypeError) as excinfo:
+        row_template()
+    assert "Unexpected type: <class 'list'>" in str(excinfo.value)

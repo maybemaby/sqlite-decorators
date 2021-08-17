@@ -1,6 +1,6 @@
 import sqlite3, functools
 from collections import namedtuple
-from typing import NamedTuple, TYPE_CHECKING, Type
+from typing import NamedTuple
 
 
 def column_strings(table_dict: dict) -> str:

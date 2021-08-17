@@ -5,6 +5,7 @@ description = "Decorators to modify SQLite with function outputs."
 authors = ["maybemaby <74226064+maybemaby@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/maybemaby/sqlite-decorators"
 
 [tool.poetry.dependencies]
 python = "^3.9"

@@ -24,6 +24,20 @@ def test_create_table(test_db):
     assert tables[1][0] == "Table1"
 
 
+def test_create_table_duplicate(test_db):
+    # Makes sure the IF NOT EXISTS clause works properly and does not throw error.
+    @create_table(test_db.cursor, test_db.connection)
+    def table_template():
+        return {"name": "Table1", "column1": "TEXT", "column2": "INT"}
+    table_template()
+    table_template()
+    tables = test_db.cursor.execute(
+        """SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"""
+    ).fetchall()
+    assert len(tables) == 2
+    assert tables[1][0] == "Table1"
+
+
 def test_dict_into_row():
     test_dict = {
         "id": 214123,

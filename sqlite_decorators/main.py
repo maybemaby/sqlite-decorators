@@ -37,7 +37,7 @@ def create_table(assigned_cursor: sqlite3.Cursor, db_connection: sqlite3.Connect
         def wrapper_create_table(*args, **kwargs):
             table_data = func(*args, **kwargs)
             assigned_cursor.execute(
-                f'CREATE TABLE {table_data["name"]} ({column_strings(table_data)})'
+                f'CREATE TABLE IF NOT EXISTS {table_data["name"]} ({column_strings(table_data)})'
             )
             db_connection.commit()
             return table_data

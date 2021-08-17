@@ -1,4 +1,5 @@
 import sqlite3, functools
+from contextlib import closing
 from collections import namedtuple
 from typing import NamedTuple
 
@@ -15,7 +16,7 @@ def column_strings(table_dict: dict) -> str:
     return ", ".join(output_list)
 
 
-def create_table(assigned_cursor: sqlite3.Cursor, db_connection: sqlite3.Connection):
+def create_table(db_connection: sqlite3.Connection):
     """Decorator that takes a sqlite3 Cursor object and sqlite3 Connection and
     creates a table from a dictionary returning from an attached function.
 
@@ -35,11 +36,12 @@ def create_table(assigned_cursor: sqlite3.Cursor, db_connection: sqlite3.Connect
     def decorator_create_table(func):
         @functools.wraps(func)
         def wrapper_create_table(*args, **kwargs):
-            table_data = func(*args, **kwargs)
-            assigned_cursor.execute(
-                f'CREATE TABLE IF NOT EXISTS {table_data["name"]} ({column_strings(table_data)})'
-            )
-            db_connection.commit()
+            with closing(db_connection.cursor()) as assigned_cursor:
+                table_data = func(*args, **kwargs)
+                assigned_cursor.execute(
+                    f'CREATE TABLE IF NOT EXISTS {table_data["name"]} ({column_strings(table_data)})'
+                )
+                db_connection.commit()
             return table_data
 
         return wrapper_create_table
@@ -67,9 +69,7 @@ def dict_into_row(insert_dict: dict) -> NamedTuple:
     return Row(", ".join(columns), col_values)
 
 
-def insert_row(
-    assigned_cursor: sqlite3.Cursor, db_connection: sqlite3.Connection, table_name: str
-):
+def insert_row(db_connection: sqlite3.Connection, table_name: str):
     """Decorator that takes function outputs and inserts it as a row to the designated table.
 
     Usage:
@@ -88,21 +88,22 @@ def insert_row(
     def decorator_insert_row(func):
         @functools.wraps(func)
         def wrapper_insert_row(*args, **kwargs):
-            func_map = {dict: dict_into_row}
-            provided_data = func(*args, **kwargs)
-            # Calls a function depending on the internal func return type
-            try:
-                row = func_map[type(provided_data)](provided_data)
-            except KeyError:
-                raise TypeError(f'Unexpected type: {type(provided_data)}')
-            assigned_cursor.execute(
-                f"""INSERT INTO {table_name}
-                ({row.col_names})
-                VALUES ({("?, " * len(row.values)).rstrip(", ")});
-            """,
-                row.values,
-            )
-            db_connection.commit()
+            with closing(db_connection.cursor()) as assigned_cursor:
+                func_map = {dict: dict_into_row}
+                provided_data = func(*args, **kwargs)
+                # Calls a function depending on the internal func return type
+                try:
+                    row = func_map[type(provided_data)](provided_data)
+                except KeyError:
+                    raise TypeError(f'Unexpected type: {type(provided_data)}')
+                assigned_cursor.execute(
+                    f"""INSERT INTO {table_name}
+                    ({row.col_names})
+                    VALUES ({("?, " * len(row.values)).rstrip(", ")});
+                """,
+                    row.values,
+                )
+                db_connection.commit()
             return provided_data
 
         return wrapper_insert_row

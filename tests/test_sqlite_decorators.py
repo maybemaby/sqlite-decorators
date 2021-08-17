@@ -1,5 +1,4 @@
 import datetime
-from typing import Type
 import pytest
 from sqlite_decorators import __version__
 from sqlite_decorators import create_table, dict_into_row, insert_row
@@ -10,7 +9,7 @@ def test_version():
 
 
 def test_create_table(test_db):
-    @create_table(test_db.cursor, test_db.connection)
+    @create_table(test_db.connection)
     def table_template():
         return {"name": "Table1", "column1": "TEXT", "column2": "INT"}
 
@@ -26,7 +25,7 @@ def test_create_table(test_db):
 
 def test_create_table_duplicate(test_db):
     # Makes sure the IF NOT EXISTS clause works properly and does not throw error.
-    @create_table(test_db.cursor, test_db.connection)
+    @create_table(test_db.connection)
     def table_template():
         return {"name": "Table1", "column1": "TEXT", "column2": "INT"}
     table_template()
@@ -66,7 +65,7 @@ def test_dict_into_row_fail():
 
 
 def test_insert_row(test_db):
-    @insert_row(test_db.cursor, test_db.connection, "insert_row")
+    @insert_row(test_db.connection, "insert_row")
     def row_template():
         return {"id": 1234, "name": "Tim", "birthday": datetime.date.today()}
 
@@ -80,7 +79,7 @@ def test_insert_row(test_db):
 
 
 def test_insert_row_type_fail(test_db):
-    @insert_row(test_db.cursor, test_db.connection, "insert_row")
+    @insert_row(test_db.connection, "insert_row")
     def row_template():
         return [1234, "Tim", datetime.date.today()]
     with pytest.raises(TypeError) as excinfo:

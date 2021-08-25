@@ -6,7 +6,16 @@ from collections import namedtuple
 def test_db():
     conn = sqlite3.connect('test.db')
     cur = conn.cursor()
-    cur.execute("CREATE TABLE insert_row (id INT, name TEXT, birthday DATE)")
+    try:
+        cur.execute("CREATE TABLE insert_row (id INT, name TEXT, birthday DATE)")
+    except sqlite3.OperationalError as e:
+        # In case a testdb wasn't teared down properly for any reason
+        if 'table insert_row already exists' in str(e):
+            conn.close()
+            os.remove('test.db')
+            conn = sqlite3.connect('test.db')
+            cur = conn.cursor()
+            cur.execute("CREATE TABLE insert_row (id INT, name TEXT, birthday DATE)")  
     conn.commit()
     TestDB = namedtuple('TestDB', ['connection', 'cursor'])
     test_db = TestDB(conn, cur)

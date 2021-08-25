@@ -1,7 +1,7 @@
-import datetime
+import datetime, itertools
 import pytest
 from sqlite_decorators import __version__
-from sqlite_decorators import create_table, dict_into_row, insert_row
+from sqlite_decorators import create_table, dict_into_row, insert_row, insert_all_rows
 
 
 def test_version():
@@ -81,7 +81,31 @@ def test_insert_row(test_db):
 def test_insert_row_type_fail(test_db):
     @insert_row(test_db.connection, "insert_row")
     def row_template():
-        return [1234, "Tim", datetime.date.today()]
+        return "String test"
     with pytest.raises(TypeError) as excinfo:
         row_template()
-    assert "Unexpected type: <class 'list'>" in str(excinfo.value)
+    assert "Unexpected type: <class 'str'>" in str(excinfo.value)
+
+
+def test_insert_all_rows(test_db):
+    @insert_all_rows(test_db.connection, "insert_row")
+    def rows_template(list_or_tuple: str):
+        if list_or_tuple == "list":
+            return [
+                (4521, "Bob", str(datetime.date(2000, 5, 12))),
+                (2314, "Steve", str(datetime.date(2000, 5, 12))),
+                (131241294, "Tom Hanks", str(datetime.date(2000, 5, 12)))
+                ]
+        elif list_or_tuple == "tuple":
+            return (
+                (2020, "Cameron", str(datetime.date(2000, 5, 12))),
+                (1520, "Willis", str(datetime.date(2000, 5, 12))),
+                (523124224, "Percy", str(datetime.date(2000, 5, 12)))
+            )
+    ex_list = rows_template("list")
+    ex_tuple = rows_template("tuple")
+    rows = test_db.cursor.execute("""
+        SELECT * FROM insert_row
+        WHERE birthday = date('2000-05-12');
+    """).fetchall()
+    assert rows == list(itertools.chain(tuple(ex_list) + ex_tuple))
